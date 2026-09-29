@@ -14,7 +14,7 @@ sources and are not supported or represented as supported in the UI.
 
 - URL: <https://tzaf24aswwdzm2blkpfyajsw240faavh.lambda-url.eu-central-1.on.aws/>
 - CloudFormation stack: `YoutubeTopicSignalsStack`
-- AWS account and Region: `563170906974`, `eu-central-1`
+- AWS Region: `eu-central-1`
 
 ## Product contract
 
@@ -141,9 +141,9 @@ The synthesized template is written to `cdk.out/`, which is ignored by Git.
 For a reviewed update, run these only after the existing secret is present:
 
 ```bash
-export CDK_DEFAULT_ACCOUNT=563170906974
+export CDK_DEFAULT_ACCOUNT="$(aws sts get-caller-identity --query Account --output text)"
 export CDK_DEFAULT_REGION=eu-central-1
-npx cdk bootstrap aws://563170906974/eu-central-1
+npx cdk bootstrap "aws://${CDK_DEFAULT_ACCOUNT}/${CDK_DEFAULT_REGION}"
 npx cdk diff --context youtubeSecretName=youtube-trend-signals/youtube-api-key
 npx cdk deploy --context youtubeSecretName=youtube-trend-signals/youtube-api-key
 ```
