@@ -86,11 +86,21 @@ def _candidates(title: str, topic_words: set[str]) -> set[str]:
     words = _tokens(title, topic_words)
     candidates = set(words)
     for size in (2, 3):
-        candidates.update(
-            " ".join(words[index : index + size])
-            for index in range(len(words) - size + 1)
-        )
+        for index in range(len(words) - size + 1):
+            phrase_words = words[index : index + size]
+            if len(set(phrase_words)) == size:
+                candidates.add(" ".join(phrase_words))
     return candidates
+
+
+def _candidate_position(title: str, candidate: str, topic_words: set[str]) -> int:
+    words = _tokens(title, topic_words)
+    phrase_words = candidate.split()
+    size = len(phrase_words)
+    for index in range(len(words) - size + 1):
+        if words[index : index + size] == phrase_words:
+            return index
+    return len(words)
 
 
 def _channel(video: dict[str, Any]) -> str:
@@ -135,16 +145,21 @@ def group_videos(
         for candidate in candidates:
             supporters_by_candidate.setdefault(candidate, set()).add(index)
 
-    def candidate_rank(candidate: str) -> tuple[int, int, int, int, str]:
+    def candidate_rank(candidate: str) -> tuple[int, int, int, int, int, str]:
         supporter_indexes = supporters_by_candidate[candidate]
         channels = {_channel(videos[index]) for index in supporter_indexes}
         channels.discard("")
         word_count = len(candidate.split())
+        position_total = sum(
+            _candidate_position(videos[index].get("title", ""), candidate, topic_words)
+            for index in supporter_indexes
+        )
         return (
             1 if word_count >= 2 else 0,
             word_count,
             len(channels),
             len(supporter_indexes),
+            -position_total,
             candidate,
         )
 

@@ -133,6 +133,27 @@ class GroupingTests(unittest.TestCase):
         )
         self.assertEqual(themes[0]["videoCount"], 2)
 
+    def test_repeated_title_segments_do_not_create_repetitive_labels(self):
+        videos = [
+            video(
+                "a",
+                "Car Jump Video Car Jump Edit",
+                10,
+                "2026-09-29T10:00:00Z",
+            ),
+            video(
+                "b",
+                "Car Jump Reels Car Jump Tutorial",
+                20,
+                "2026-09-29T09:00:00Z",
+            ),
+        ]
+
+        themes = group_videos(videos, "AI video editing")
+
+        self.assertEqual(themes[0]["label"], "Car Jump")
+        self.assertNotIn("Car Jump Car", [theme["label"] for theme in themes])
+
     def test_no_defensible_recurrence_returns_only_remainder(self):
         videos = [
             video("a", "Trending Edit Prompt", 10, "2026-09-29T10:00:00Z"),
