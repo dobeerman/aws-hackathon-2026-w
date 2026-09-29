@@ -27,7 +27,7 @@ The app deliberately calls these **signals from the search**. It has no historic
 
 ## How the coding agent helped ship
 
-Codex was connected to AWS through the AWS MCP Server. An authenticated STS GetCallerIdentity call verified the intended account (`563170906974`) and the Frankfurt Region (`eu-central-1`). Codex implemented the UI, YouTube integration, grouping logic, tests, and AWS CDK infrastructure. It synthesized and reviewed the stack, deployed it, verified the public URL with live API results, then refined the grouping after a live test showed generic labels such as “Trending” and “Edit.” The revised live result produced specific labels such as “Hotel Lobby Song,” “Pata Chalega Song,” “Car Driving,” and “Car Jump.”
+Codex was connected to AWS through the AWS MCP Server. An authenticated STS GetCallerIdentity call verified access to the intended AWS environment in Frankfurt (`eu-central-1`). Codex implemented the UI, YouTube integration, grouping logic, tests, and AWS CDK infrastructure. It synthesized and reviewed the stack, deployed it, verified the public URL with live API results, then refined the grouping after a live test showed generic labels such as “Trending” and “Edit.” The revised live result produced specific labels such as “Hotel Lobby Song,” “Pata Chalega Song,” “Car Driving,” and “Car Jump.”
 
 Attach a screenshot of the Codex AWS MCP tool invocation and response. Add a second screenshot showing the live application results. Redact credentials; the YouTube API key must not appear in the entry.
 
