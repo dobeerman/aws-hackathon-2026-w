@@ -50,11 +50,12 @@ permission to read only that secret. The API key is never passed as a CDK contex
 value, Lambda environment value, or CloudFormation plaintext value.
 
 No database, queue, user account, scheduler, crawler, API Gateway, Bedrock model,
-or multi-agent system is used. Deterministic grouping is intentional: common
-meaningful words from retrieved video titles form candidate themes; themes are
-ordered by supporting-video count, then summed available views, then recency.
-Each video is assigned to its strongest matching candidate. This makes the result
-reproducible and lets the UI explain exactly why a theme appeared.
+or multi-agent system is used. Deterministic grouping is intentional: specific
+words and 2–3 word phrases repeated in at least two retrieved titles form candidate
+themes. Generic promotional/editing vocabulary is excluded, multiword phrases and
+cross-channel support are preferred, and unmatched videos stay in an honestly
+labeled remainder group. This makes the result reproducible and lets the UI explain
+exactly why a theme appeared.
 
 ## Repository layout
 
@@ -179,7 +180,8 @@ status and an `error` object with a stable `code` and useful `message`.
 - View counts are cumulative snapshots when available. The app has no historical
   store and therefore does not calculate growth or velocity.
 - Theme labels are lexical title clusters. They are transparent and inexpensive,
-  but they do not provide semantic understanding across unrelated vocabulary.
+  but exact wording differences can prevent semantically related titles from
+  clustering together.
 - YouTube may omit or hide statistics, and the UI labels unavailable values.
 - Search relevance, availability, regional behavior, and quota enforcement are
   controlled by YouTube.

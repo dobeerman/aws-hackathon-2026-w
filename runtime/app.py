@@ -15,9 +15,10 @@ from youtube import YouTubeError, search_videos
 ALLOWED_WINDOWS = {1, 3, 7, 14, 30}
 MAX_TOPIC_LENGTH = 100
 METHODOLOGY = (
-    "Themes are deterministic lexical groups from repeated meaningful words and "
-    "phrases in the retrieved video titles. Groups are ordered by supporting-video "
-    "count, then summed available views, then recency. These are signals from this "
+    "Themes are deterministic groups from specific words and 2–3 word phrases "
+    "repeated in at least two retrieved video titles. Promotional and editing terms "
+    "are excluded; multiword phrases and cross-channel evidence are preferred. "
+    "Unmatched videos remain in Other relevant signals. These are signals from this "
     "search—not a ranking of all YouTube trends. View counts are snapshots, not growth."
 )
 _cached_api_key: str | None = None

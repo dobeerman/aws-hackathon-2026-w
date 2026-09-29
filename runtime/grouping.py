@@ -3,29 +3,45 @@
 from __future__ import annotations
 
 import re
-from collections import Counter
 from datetime import datetime
 from typing import Any
 
 TOKEN_PATTERN = re.compile(r"[a-z0-9][a-z0-9'+-]{2,}")
-STOP_WORDS = {
+GENERIC_WORDS = {
     "about",
     "after",
     "again",
     "against",
+    "amazing",
     "best",
+    "capcut",
+    "clip",
+    "clips",
     "could",
+    "edit",
+    "editing",
+    "edits",
+    "effect",
+    "effects",
     "from",
+    "generated",
+    "generator",
     "have",
     "here",
+    "how",
     "into",
     "just",
     "latest",
+    "make",
     "more",
     "most",
     "new",
     "now",
     "official",
+    "prompt",
+    "prompts",
+    "reel",
+    "reels",
     "short",
     "shorts",
     "that",
@@ -34,7 +50,15 @@ STOP_WORDS = {
     "these",
     "this",
     "today",
+    "trend",
+    "trending",
+    "tutorial",
+    "tutorials",
+    "use",
+    "using",
     "video",
+    "videos",
+    "viral",
     "what",
     "when",
     "where",
@@ -50,15 +74,32 @@ def _tokens(text: str, topic_words: set[str]) -> list[str]:
     return [
         token
         for token in TOKEN_PATTERN.findall(text.lower())
-        if token not in STOP_WORDS and token not in topic_words
+        if token not in GENERIC_WORDS and token not in topic_words
     ]
 
 
 def _candidates(title: str, topic_words: set[str]) -> set[str]:
     words = _tokens(title, topic_words)
     candidates = set(words)
-    candidates.update(f"{left} {right}" for left, right in zip(words, words[1:]))
+    for size in (2, 3):
+        candidates.update(
+            " ".join(words[index : index + size])
+            for index in range(len(words) - size + 1)
+        )
     return candidates
+
+
+def _channel(video: dict[str, Any]) -> str:
+    value = video.get("channelTitle")
+    return value.strip().casefold() if isinstance(value, str) else ""
+
+
+def _has_cross_channel_support(
+    supporter_indexes: set[int], videos: list[dict[str, Any]]
+) -> bool:
+    channels = [_channel(videos[index]) for index in supporter_indexes]
+    known_channels = {channel for channel in channels if channel}
+    return len(known_channels) >= 2 or any(not channel for channel in channels)
 
 
 def _views(video: dict[str, Any]) -> int:
@@ -85,58 +126,58 @@ def group_videos(
 
     topic_words = set(TOKEN_PATTERN.findall(topic.lower()))
     per_video = [_candidates(video.get("title", ""), topic_words) for video in videos]
-    document_frequency = Counter(
-        candidate for candidates in per_video for candidate in candidates
-    )
+    supporters_by_candidate: dict[str, set[int]] = {}
+    for index, candidates in enumerate(per_video):
+        for candidate in candidates:
+            supporters_by_candidate.setdefault(candidate, set()).add(index)
 
-    def candidate_rank(candidate: str) -> tuple[int, int, int, str]:
-        supporters = [
-            video
-            for video, candidates in zip(videos, per_video)
-            if candidate in candidates
-        ]
+    def candidate_rank(candidate: str) -> tuple[int, int, int, int, str]:
+        supporter_indexes = supporters_by_candidate[candidate]
+        channels = {_channel(videos[index]) for index in supporter_indexes}
+        channels.discard("")
+        word_count = len(candidate.split())
         return (
-            document_frequency[candidate],
-            sum(_views(video) for video in supporters),
-            len(candidate.split()),
+            1 if word_count >= 2 else 0,
+            word_count,
+            len(channels),
+            len(supporter_indexes),
             candidate,
         )
 
-    repeated = [
-        candidate for candidate, count in document_frequency.items() if count >= 2
+    eligible = [
+        candidate
+        for candidate, supporter_indexes in supporters_by_candidate.items()
+        if len(supporter_indexes) >= 2
+        and _has_cross_channel_support(supporter_indexes, videos)
     ]
-    repeated.sort(key=candidate_rank, reverse=True)
+    eligible.sort(key=candidate_rank, reverse=True)
 
-    selected: list[str] = []
-    selected_words: set[str] = set()
-    for candidate in repeated:
-        words = set(candidate.split())
-        if words & selected_words:
+    selected: list[tuple[str, set[int]]] = []
+    claimed: set[int] = set()
+    for candidate in eligible:
+        available_supporters = supporters_by_candidate[candidate] - claimed
+        if len(available_supporters) < 2:
             continue
-        selected.append(candidate)
-        selected_words.update(words)
+        if not _has_cross_channel_support(available_supporters, videos):
+            continue
+        selected.append((candidate, available_supporters))
+        claimed.update(available_supporters)
         if len(selected) == max_themes:
             break
 
-    assignments: dict[str, list[dict[str, Any]]] = {
-        candidate: [] for candidate in selected
-    }
-    other: list[dict[str, Any]] = []
-
-    for video, candidates in zip(videos, per_video):
-        matches = [candidate for candidate in selected if candidate in candidates]
-        if matches:
-            strongest = max(matches, key=candidate_rank)
-            assignments[strongest].append(video)
-        else:
-            other.append(video)
-
     groups: list[dict[str, Any]] = []
-    for candidate, supporting_videos in assignments.items():
-        if not supporting_videos:
-            continue
-        groups.append(_make_theme(candidate.title(), supporting_videos, candidate))
+    for candidate, supporter_indexes in selected:
+        supporting_videos = [videos[index] for index in sorted(supporter_indexes)]
+        channel_count = len({_channel(video) for video in supporting_videos} - {""})
+        groups.append(
+            _make_theme(
+                candidate.title(),
+                supporting_videos,
+                f'phrase "{candidate}" appears across {channel_count} channel(s)',
+            )
+        )
 
+    other = [video for index, video in enumerate(videos) if index not in claimed]
     if other:
         groups.append(
             _make_theme(
@@ -146,15 +187,7 @@ def group_videos(
             )
         )
 
-    groups.sort(
-        key=lambda group: (
-            group["videoCount"],
-            group["availableViewTotal"],
-            group["newestPublishedAt"],
-        ),
-        reverse=True,
-    )
-    return groups[: max_themes + 1]
+    return groups
 
 
 def _make_theme(
