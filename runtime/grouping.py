@@ -74,27 +74,35 @@ GENERIC_WORDS = {
 }
 
 
-def _tokens(text: str, topic_words: set[str]) -> list[str]:
-    return [
-        token
-        for token in TOKEN_PATTERN.findall(text.lower())
-        if token not in GENERIC_WORDS and token not in topic_words
-    ]
+def _specific_runs(text: str, topic_words: set[str]) -> list[list[str]]:
+    runs: list[list[str]] = []
+    current: list[str] = []
+    for token in TOKEN_PATTERN.findall(text.lower()):
+        if token in GENERIC_WORDS or token in topic_words:
+            if current:
+                runs.append(current)
+                current = []
+        else:
+            current.append(token)
+    if current:
+        runs.append(current)
+    return runs
 
 
 def _candidates(title: str, topic_words: set[str]) -> set[str]:
-    words = _tokens(title, topic_words)
-    candidates = set(words)
-    for size in (2, 3):
-        for index in range(len(words) - size + 1):
-            phrase_words = words[index : index + size]
-            if len(set(phrase_words)) == size:
-                candidates.add(" ".join(phrase_words))
+    runs = _specific_runs(title, topic_words)
+    candidates = {word for run in runs for word in run}
+    for words in runs:
+        for size in (2, 3):
+            for index in range(len(words) - size + 1):
+                phrase_words = words[index : index + size]
+                if len(set(phrase_words)) == size:
+                    candidates.add(" ".join(phrase_words))
     return candidates
 
 
-def _candidate_position(title: str, candidate: str, topic_words: set[str]) -> int:
-    words = _tokens(title, topic_words)
+def _candidate_position(title: str, candidate: str) -> int:
+    words = TOKEN_PATTERN.findall(title.lower())
     phrase_words = candidate.split()
     size = len(phrase_words)
     for index in range(len(words) - size + 1):
@@ -151,7 +159,7 @@ def group_videos(
         channels.discard("")
         word_count = len(candidate.split())
         position_total = sum(
-            _candidate_position(videos[index].get("title", ""), candidate, topic_words)
+            _candidate_position(videos[index].get("title", ""), candidate)
             for index in supporter_indexes
         )
         return (

@@ -154,6 +154,28 @@ class GroupingTests(unittest.TestCase):
         self.assertEqual(themes[0]["label"], "Car Jump")
         self.assertNotIn("Car Jump Car", [theme["label"] for theme in themes])
 
+    def test_generic_boundaries_do_not_join_unrelated_subject_words(self):
+        videos = [
+            video(
+                "a",
+                "Car Driving AI Video Editing Prompt Pata Chalega Song",
+                10,
+                "2026-09-29T10:00:00Z",
+            ),
+            video(
+                "b",
+                "Car Driving AI Video Editing Pata Chalega Song",
+                20,
+                "2026-09-29T09:00:00Z",
+            ),
+        ]
+
+        themes = group_videos(videos, "AI video editing")
+        labels = [theme["label"] for theme in themes]
+
+        self.assertEqual(labels[0], "Pata Chalega Song")
+        self.assertNotIn("Car Driving Pata", labels)
+
     def test_no_defensible_recurrence_returns_only_remainder(self):
         videos = [
             video("a", "Trending Edit Prompt", 10, "2026-09-29T10:00:00Z"),
