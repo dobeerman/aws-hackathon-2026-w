@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Explore explainable topic signals from recent YouTube videos."
+    />
+    <title>Signal Lens — YouTube topic signals</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --ink: #f7f7f2;
+        --muted: #a7aaa2;
+        --panel: rgba(24, 26, 25, 0.88);
+        --line: rgba(255, 255, 255, 0.12);
+        --acid: #c8ff4d;
+        --coral: #ff7557;
+        --blue: #77a7ff;
+        --bg: #0c0d0d;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--ink);
+        background:
+          radial-gradient(
+            circle at 80% 0%,
+            rgba(119, 167, 255, 0.17),
+            transparent 32rem
+          ),
+          radial-gradient(
+            circle at 5% 20%,
+            rgba(200, 255, 77, 0.09),
+            transparent 27rem
+          ),
+          var(--bg);
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+      }
+
+      body::before {
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        content: "";
+        opacity: 0.2;
+        background-image:
+          linear-gradient(var(--line) 1px, transparent 1px),
+          linear-gradient(90deg, var(--line) 1px, transparent 1px);
+        background-size: 48px 48px;
+        mask-image: linear-gradient(to bottom, black, transparent 75%);
+      }
+
+      .shell {
+        width: min(1120px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 28px 0 72px;
+      }
+
+      nav,
+      .eyebrow,
+      .meta,
+      .pill {
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        letter-spacing: 0.04em;
+      }
+
+      nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 42px;
+        font-size: 0.76rem;
+        text-transform: uppercase;
+      }
+
+      .brand {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        font-weight: 800;
+      }
+
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--acid);
+        box-shadow: 0 0 20px var(--acid);
+      }
+
+      .source-badge,
+      .pill {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 7px 11px;
+        color: var(--muted);
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      header {
+        max-width: 840px;
+      }
+
+      .eyebrow {
+        margin: 0 0 18px;
+        color: var(--acid);
+        font-size: 0.76rem;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(3rem, 9vw, 7.3rem);
+        font-weight: 760;
+        line-height: 0.88;
+        letter-spacing: -0.075em;
+      }
+
+      h1 span {
+        color: transparent;
+        -webkit-text-stroke: 1px rgba(247, 247, 242, 0.55);
+      }
+
+      .intro {
+        max-width: 650px;
+        margin: 28px 0 32px;
+        color: var(--muted);
+        font-size: clamp(1rem, 2vw, 1.2rem);
+        line-height: 1.65;
+      }
+
+      form {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 10px;
+        max-width: 850px;
+        padding: 9px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: rgba(10, 11, 11, 0.82);
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+        backdrop-filter: blur(18px);
+      }
+
+      input,
+      select,
+      button {
+        min-height: 54px;
+        border: 0;
+        border-radius: 11px;
+        font: inherit;
+      }
+
+      input,
+      select {
+        color: var(--ink);
+        outline: none;
+        background: #181a19;
+      }
+
+      input {
+        min-width: 0;
+        padding: 0 18px;
+        font-size: 1.05rem;
+      }
+
+      select {
+        padding: 0 36px 0 14px;
+      }
+
+      button {
+        padding: 0 24px;
+        color: #111;
+        font-weight: 760;
+        cursor: pointer;
+        background: var(--acid);
+        transition:
+          transform 160ms ease,
+          box-shadow 160ms ease;
+      }
+
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(200, 255, 77, 0.2);
+      }
+
+      button:disabled {
+        cursor: wait;
+        opacity: 0.65;
+        transform: none;
+      }
+
+      .fine-print {
+        max-width: 850px;
+        margin: 13px 2px 0;
+        color: #7f827b;
+        font-size: 0.77rem;
+        line-height: 1.5;
+      }
+
+      #status {
+        min-height: 28px;
+        margin: 30px 0 8px;
+        color: var(--muted);
+      }
+
+      #status.error {
+        color: #ff9b86;
+      }
+
+      .summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 28px 0 18px;
+      }
+
+      .method {
+        margin: 0 0 28px;
+        padding: 16px 18px;
+        border-left: 3px solid var(--blue);
+        color: var(--muted);
+        background: rgba(119, 167, 255, 0.07);
+        line-height: 1.6;
+      }
+
+      .themes {
+        display: grid;
+        gap: 18px;
+      }
+
+      .theme {
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        background: var(--panel);
+      }
+
+      .theme-head {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 20px;
+        align-items: end;
+        padding: 24px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      h2 {
+        margin: 0 0 7px;
+        font-size: clamp(1.5rem, 4vw, 2.4rem);
+        letter-spacing: -0.04em;
+      }
+
+      .why {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+
+      .count {
+        color: var(--acid);
+        font:
+          700 2.3rem/1 ui-monospace,
+          monospace;
+      }
+
+      .videos {
+        display: grid;
+      }
+
+      .video {
+        display: grid;
+        grid-template-columns: 168px 1fr auto;
+        gap: 18px;
+        align-items: center;
+        padding: 18px 24px;
+        color: inherit;
+        text-decoration: none;
+        border-bottom: 1px solid var(--line);
+        transition: background 150ms ease;
+      }
+
+      .video:last-child {
+        border-bottom: 0;
+      }
+
+      .video:hover {
+        background: rgba(255, 255, 255, 0.035);
+      }
+
+      .video img,
+      .thumb-placeholder {
+        width: 168px;
+        aspect-ratio: 16 / 9;
+        object-fit: cover;
+        border-radius: 9px;
+        background: #232624;
+      }
+
+      .video h3 {
+        margin: 0 0 8px;
+        font-size: 1rem;
+        line-height: 1.35;
+      }
+
+      .meta {
+        color: var(--muted);
+        font-size: 0.71rem;
+        line-height: 1.6;
+      }
+
+      .views {
+        color: var(--ink);
+        font:
+          700 0.85rem/1.2 ui-monospace,
+          monospace;
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      .empty {
+        padding: 40px;
+        border: 1px dashed var(--line);
+        border-radius: 18px;
+        color: var(--muted);
+        text-align: center;
+      }
+
+      footer {
+        margin-top: 44px;
+        color: #6e716b;
+        font-size: 0.76rem;
+      }
+
+      @media (max-width: 720px) {
+        form {
+          grid-template-columns: 1fr;
+        }
+
+        .video {
+          grid-template-columns: 104px 1fr;
+          padding: 15px;
+        }
+
+        .video img,
+        .thumb-placeholder {
+          width: 104px;
+        }
+
+        .views {
+          grid-column: 2;
+          text-align: left;
+        }
+
+        .theme-head {
+          align-items: start;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <nav>
+        <div class="brand"><span class="dot"></span> Signal Lens</div>
+        <div class="source-badge">Live source · YouTube</div>
+      </nav>
+
+      <header>
+        <p class="eyebrow">Search evidence, not hype</p>
+        <h1>Find the next<br /><span>video angle.</span></h1>
+        <p class="intro">
+          Explore recent short-duration YouTube videos around a topic and see
+          the real sources behind each emerging theme.
+        </p>
+      </header>
+
+      <form id="search-form">
+        <input
+          id="topic"
+          name="topic"
+          maxlength="100"
+          required
+          autocomplete="off"
+          placeholder="Try: AI video editing"
+          aria-label="Topic"
+        />
+        <select id="days" name="days" aria-label="Recent time window">
+          <option value="1">Past 24 hours</option>
+          <option value="3">Past 3 days</option>
+          <option value="7" selected>Past 7 days</option>
+          <option value="14">Past 14 days</option>
+          <option value="30">Past 30 days</option>
+        </select>
+        <button id="submit" type="submit">Find signals →</button>
+      </form>
+      <p class="fine-print">
+        YouTube only in this release. “Short” uses YouTube's
+        <code>videoDuration=short</code> filter and is not an exact YouTube
+        Shorts classification. Results are search signals—not platform-wide
+        trend rankings.
+      </p>
+
+      <div id="status" role="status" aria-live="polite"></div>
+      <section id="results" hidden></section>
+
+      <footer>
+        Built for AWS Builder Center Zero to Shipped · No historical growth data
+        is inferred or invented.
+      </footer>
+    </main>
+
+    <script>
+      const form = document.querySelector("#search-form");
+      const button = document.querySelector("#submit");
+      const status = document.querySelector("#status");
+      const results = document.querySelector("#results");
+
+      const escapeHtml = (value) =>
+        String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+
+      const number = new Intl.NumberFormat();
+      const date = new Intl.DateTimeFormat(undefined, {
+        dateStyle: "medium",
+        timeStyle: "short",
+      });
+
+      function renderVideo(video) {
+        const thumbnail = video.thumbnailUrl
+          ? `<img src="${escapeHtml(video.thumbnailUrl)}" alt="" loading="lazy" />`
+          : '<div class="thumb-placeholder"></div>';
+        const views =
+          video.viewCount === null
+            ? "Views unavailable"
+            : `${number.format(video.viewCount)} views`;
+        const published = video.publishedAt
+          ? date.format(new Date(video.publishedAt))
+          : "Publication time unavailable";
+        return `
+          <a class="video" href="${escapeHtml(video.url)}" target="_blank" rel="noopener noreferrer">
+            ${thumbnail}
+            <div>
+              <h3>${escapeHtml(video.title)}</h3>
+              <div class="meta">${escapeHtml(video.channelTitle)}<br />Published ${escapeHtml(published)}</div>
+            </div>
+            <div class="views">${escapeHtml(views)} ↗</div>
+          </a>`;
+      }
+
+      function render(data) {
+        const fetched = date.format(new Date(data.fetchedAt));
+        const summary = `
+          <div class="summary">
+            <span class="pill">${data.resultCount} source video${data.resultCount === 1 ? "" : "s"}</span>
+            <span class="pill">Past ${data.windowDays} day${data.windowDays === 1 ? "" : "s"}</span>
+            <span class="pill">Fetched ${escapeHtml(fetched)}</span>
+          </div>
+          <p class="method"><strong>How themes were selected:</strong> ${escapeHtml(data.methodology)}</p>`;
+
+        if (!data.themes.length) {
+          results.innerHTML = `${summary}<div class="empty">${escapeHtml(data.emptyMessage)}</div>`;
+          return;
+        }
+
+        const themes = data.themes
+          .map(
+            (theme) => `
+              <article class="theme">
+                <div class="theme-head">
+                  <div>
+                    <h2>${escapeHtml(theme.label)}</h2>
+                    <p class="why">${escapeHtml(theme.why)}</p>
+                  </div>
+                  <div class="count">${theme.videoCount}</div>
+                </div>
+                <div class="videos">${theme.videos.map(renderVideo).join("")}</div>
+              </article>`,
+          )
+          .join("");
+        results.innerHTML = `${summary}<div class="themes">${themes}</div>`;
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        status.className = "";
+        status.textContent =
+          "Searching recent YouTube videos and grouping the evidence…";
+        results.hidden = true;
+        button.disabled = true;
+        button.textContent = "Searching…";
+
+        try {
+          const response = await fetch("/api/search", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              topic: document.querySelector("#topic").value,
+              days: Number(document.querySelector("#days").value),
+            }),
+          });
+          const data = await response.json();
+          if (!response.ok)
+            throw new Error(data.error?.message || "Search failed.");
+          render(data);
+          results.hidden = false;
+          status.textContent = `Signals for “${data.query}”`;
+        } catch (error) {
+          status.className = "error";
+          status.textContent = error.message || "Search failed. Try again.";
+        } finally {
+          button.disabled = false;
+          button.textContent = "Find signals →";
+        }
+      });
+    </script>
+  </body>
+</html>

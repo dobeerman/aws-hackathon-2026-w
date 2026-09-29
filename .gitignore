@@ -1,0 +1,10 @@
+node_modules/
+cdk.out/
+coverage/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.env
+.DS_Store
+
