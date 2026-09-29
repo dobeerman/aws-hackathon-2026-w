@@ -57,6 +57,18 @@ class GroupingTests(unittest.TestCase):
                 90,
                 "2026-09-29T07:00:00Z",
             ),
+            video(
+                "e",
+                "Instagram Car Driving Video Kaise Banaye",
+                80,
+                "2026-09-29T06:00:00Z",
+            ),
+            video(
+                "f",
+                "Trending Car Driving AI Video Kaise Banaye",
+                70,
+                "2026-09-29T05:00:00Z",
+            ),
         ]
 
         themes = group_videos(videos, "AI video editing")
@@ -66,6 +78,8 @@ class GroupingTests(unittest.TestCase):
         self.assertNotIn("Trending", labels)
         self.assertNotIn("Edit", labels)
         self.assertNotIn("Prompt", labels)
+        self.assertNotIn("Kaise Banaye", labels)
+        self.assertIn("Car Driving", labels)
         self.assertEqual(labels[-1], "Other relevant signals")
 
     def test_recurring_observed_subjects_become_specific_themes(self):
