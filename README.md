@@ -10,6 +10,12 @@ explainable themes.
 This release supports **YouTube only**. TikTok and Instagram are possible future
 sources and are not supported or represented as supported in the UI.
 
+## Live deployment
+
+- URL: <https://tzaf24aswwdzm2blkpfyajsw240faavh.lambda-url.eu-central-1.on.aws/>
+- CloudFormation stack: `YoutubeTopicSignalsStack`
+- AWS account and Region: `563170906974`, `eu-central-1`
+
 ## Product contract
 
 - The default search window is seven days; supported windows are 1, 3, 7, 14,
@@ -129,10 +135,9 @@ npm run synth
 
 The synthesized template is written to `cdk.out/`, which is ignored by Git.
 
-## Reviewed deployment commands
+## Deployment commands
 
-Do **not** run these until the synthesized template and IAM changes have been
-reviewed and the existing secret is present:
+For a reviewed update, run these only after the existing secret is present:
 
 ```bash
 export CDK_DEFAULT_ACCOUNT=563170906974
@@ -143,9 +148,7 @@ npx cdk deploy --context youtubeSecretName=youtube-trend-signals/youtube-api-key
 ```
 
 Bootstrap is required only if the target account/Region has not already been
-bootstrapped. `cdk diff` must be reviewed before deployment. This implementation
-step intentionally stops after `cdk synth` and does not run bootstrap, diff, or
-deploy.
+bootstrapped. `cdk diff` must be reviewed before deployment.
 
 ## API
 
